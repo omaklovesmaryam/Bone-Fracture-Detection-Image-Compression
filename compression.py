@@ -58,20 +58,24 @@ class CompressionAnalyzer:
             print(f"performing jpeg2000....")
         #conv PIL to numpy array SINCE: jpeg2000 is not supported in PIL :(
             img_array = np.array(img)
-        #saving og img temporarily
-            temp_input = "temp_input.png"
-            img.save(temp_input)
-        #O/P img path
+        #O/P img path, codestream o/p
             temp_output = "temp_compressed.jp2"
-        
+            #use glymur with compression ratios parameter
+
+            if os.path.exists(temp_output):#if theres one already, delerte it
+                os.remove(temp_output)
+        # cratios controls the compression - lower numbers = more compression
+        # Example: cratios=[192, 1] means first layer at 192:1, second at 1:1
+            target_ratio = compression_ratio
+       # Create compression ratios - we'll use two layers for better control
+            cratios = [compression_ratio] # First layer at target ratio, second at 1:1 (highest quality)
         #using glymur to compress w/ JPEG2000 DOES WAVELET XFORM ITSELF!!!
-            jp2 = glymur.Jp2k(temp_output, data=img_array)
+        # Proper lossless/lossy encoding
+            jp2 = glymur.Jp2k(temp_output, data=img_array, cratios=cratios)
         #glymur handles the wavelet transform and EBCOT coding internally
         
-        #find file size
-            compressed_size = os.path.getsize(temp_output)
         #read back the compressed image
-            compressed_array = jp2[:]
+            compressed_array = jp2[:]  # Decode
             compressed_img = Image.fromarray(compressed_array)
         
             print(f"JPEG2000 compression complete! Ratio: {compression_ratio}:1")
@@ -207,9 +211,9 @@ if __name__ == "__main__":#this only runs when compression.py is run:
                 print(f"file size reduced to {ratio*100:.1f}% of og")
                 print(f"quality: PSNR {psnr:.2f} dB, MSE {mse:.2f}")
                 #ok now ai model testing:
-                print("testing ai prediction!")
-                prediction_changed= analyzer.test_prediction(img_path, standard='JPEG', quality=quality)
-                print(f"model's prediction affected?:{'yes..' if prediction_changed else 'No!'}")
+                #print("testing ai prediction!")
+                #prediction_changed= analyzer.test_prediction(img_path, standard='JPEG', quality=quality)
+                #print(f"model's prediction affected?:{'yes..' if prediction_changed else 'No!'}")
                 
             # Test JPEG2000 at different quality levels
             print("\n JPEG2000 COMPRESSION (Wavelet-based):")
@@ -222,11 +226,12 @@ if __name__ == "__main__":#this only runs when compression.py is run:
                 print(f"File size: {ratio*100:.1f}% of original")
                 print(f"Quality: PSNR {psnr:.2f} dB, MSE {mse:.2f}")
                 #ok now ai model testing:
-                print("testing ai prediction!")
-                prediction_changed = analyzer.test_prediction(
-                    img_path, standard='JPEG2000', compression_ratio=compression_ratio
-                )
-                print(f"model's prediction affected?:{'yes..' if prediction_changed else 'No!'}")
-            break  # just trying one img for now
+                # just trying one img for now
+                #print("testing ai prediction!")
+                #prediction_changed = analyzer.test_prediction(
+                #    img_path, standard='JPEG2000', compression_ratio=compression_ratio
+                #)
+                #print(f"model's prediction affected?:{'yes..' if prediction_changed else 'No!'}")
+            #break  # just trying one img for now
     else:
         print("no images found")
