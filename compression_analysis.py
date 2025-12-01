@@ -17,6 +17,7 @@ class CompressionPerformanceAnalyzer:
         for img_path in test_images:
             if os.path.exists(img_path): 
                 print(f"now testing {img_path}")
+                original_size = os.path.getsize(img_path)#og file size
         #here we test jpeg:
                 for quality in qualities:
                     print(f"testing JPEG w/ quality at {quality}%...")
@@ -26,7 +27,8 @@ class CompressionPerformanceAnalyzer:
                     
                     #testing ai prediction, we get true or false based on if it was able to guess right after compression
                     prediction_changed = analyzer.test_prediction(img_path,  standard='JPEG', quality=quality)
-                    
+                    # Calculate compressed file size
+                    compressed_size = original_size / ratio
                     #store results/ans
                     self.results.append({
                         'image_path': img_path,
@@ -37,7 +39,9 @@ class CompressionPerformanceAnalyzer:
                         'prediction_changed': prediction_changed,
                         'file_size_reduction': (1 - ratio) * 100,  # % reduction
                         'psnr': psnr,
-                        'mse': mse
+                        'mse': mse,
+                        'compressed_size': compressed_size,  #acc file size in bytes
+                        'original_size': original_size
                     })
         #here we test jpeg2000
                 for compression_ratio in compression_ratios:
@@ -59,7 +63,9 @@ class CompressionPerformanceAnalyzer:
                         'prediction_changed': prediction_changed,
                         'file_size_reduction': (1 - ratio) * 100,
                         'psnr': psnr,
-                        'mse': mse
+                        'mse': mse,
+                        'compressed_size': compressed_size,  #acc file size in bytes
+                        'original_size': original_size
                     })
                 print("-" * 30)#just a seperation
     
@@ -98,7 +104,7 @@ class CompressionPerformanceAnalyzer:
         plt.title('JPEG: Quality vs Compression Ratio')
         plt.legend()
         plt.grid(True)
-        
+        plt.gca().invert_xaxis()
         #second si for File Size Reduction vs Quality
         plt.subplot(2, 5, 2)
         #similar method to plot one:
@@ -111,7 +117,7 @@ class CompressionPerformanceAnalyzer:
         plt.ylabel('File Size Reduction (%)')
         plt.title('JPEG:Quality vs File Size Reduction')
         plt.grid(True)
-        
+        plt.gca().invert_xaxis()
         #plot 3= PSNR vs Quality
         plt.subplot(2, 5, 3) 
         for img_path in jpeg_data['image_path'].unique():
@@ -122,7 +128,7 @@ class CompressionPerformanceAnalyzer:
         plt.ylabel('PSNR (dB)')
         plt.title('Quality vs PSNR')
         plt.grid(True)
-
+        plt.gca().invert_xaxis()
         #plot 4 MSE vs Quality  
         plt.subplot(2, 5, 4)
         for img_path in jpeg_data['image_path'].unique():
@@ -133,7 +139,7 @@ class CompressionPerformanceAnalyzer:
         plt.ylabel('MSE')
         plt.title('Quality vs MSE')
         plt.grid(True)
-
+        plt.gca().invert_xaxis()
         #5th plot: !!!this one is basically how prediction accuracy is affected by compression
         plt.subplot(2, 5, 5)
 
@@ -148,7 +154,7 @@ class CompressionPerformanceAnalyzer:
         plt.ylabel('Prediction Error Rate (%)')
         plt.title('Quality vs Models Prediction Errors')#idk how to use an appostraphy without breaking this
         plt.grid(True)
-
+        plt.gca().invert_xaxis()
 #JPEG2000 PLOTS-------------------------------
 
         # Plot 6: JPEG2000 Compression Ratio vs Compression Ratio
@@ -158,7 +164,7 @@ class CompressionPerformanceAnalyzer:
             img_data = jpeg2k_data[jpeg2k_data['image_path'] == img_path]
             label = self.img_labeler(img_path)
             plt.plot(img_data['quality'], img_data['compression_ratio'], 
-                marker='o', label=img_path)
+                marker='o', label=label)
         plt.xlabel('Compression Ratio (X:1)')
         plt.ylabel('Compression Ratio')
         plt.title('JPEG2000: Ratio vs Compression')
@@ -171,7 +177,7 @@ class CompressionPerformanceAnalyzer:
             img_data = jpeg2k_data[jpeg2k_data['image_path'] == img_path]
             label = self.img_labeler(img_path)
             plt.plot(img_data['quality'], img_data['file_size_reduction'], 
-                marker='s', label=img_path)
+                marker='s', label=label)
         plt.xlabel('Compression Ratio (X:1)')
         plt.ylabel('File Size Reduction (%)')
         plt.title('JPEG2000: Ratio vs File Size Reduction')
@@ -182,7 +188,7 @@ class CompressionPerformanceAnalyzer:
         for img_path in jpeg2k_data['image_path'].unique():
             img_data = jpeg2k_data[jpeg2k_data['image_path'] == img_path]
             plt.plot(img_data['quality'], img_data['psnr'], 
-                marker='o', label=img_path)
+                marker='o', label=os.path.basename(img_path))
         plt.xlabel('Compression Ratio (X:1)')
         plt.ylabel('PSNR (dB)')
         plt.title('JPEG2000: Ratio vs PSNR')
@@ -193,7 +199,7 @@ class CompressionPerformanceAnalyzer:
         for img_path in jpeg2k_data['image_path'].unique():
             img_data = jpeg2k_data[jpeg2k_data['image_path'] == img_path]
             plt.plot(img_data['quality'], img_data['mse'], 
-                marker='s', label=img_path)
+                marker='s', label=os.path.basename(img_path))
         plt.xlabel('Compression Ratio (X:1)')
         plt.ylabel('MSE')
         plt.title('JPEG2000: Ratio vs MSE')
